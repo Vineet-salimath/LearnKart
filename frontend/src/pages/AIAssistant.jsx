@@ -2,11 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Sparkles, BookOpen, Award, CreditCard, HelpCircle, Loader, Copy, Check, RotateCcw } from 'lucide-react';
 import { sendMessageToAI, EXAMPLE_QUESTIONS } from '../services/aiService';
-import { useAuthStore } from '../store/authStore';
-import COURSES_WITH_CONTENT from '../data/coursesData';
 
 const AIAssistant = () => {
-  const { isAuthenticated, user } = useAuthStore();
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -86,27 +83,9 @@ const AIAssistant = () => {
     setInput('');
     setIsLoading(true);
 
-    const pathname = window.location.pathname;
-    const enrolledCourseIds = isAuthenticated
-      ? JSON.parse(localStorage.getItem('enrolledCourses') || '[]')
-      : [];
-
-    const learningPathMatch = pathname.match(/^\/learn\/(\d+)/);
-    const activeCourseId = learningPathMatch?.[1] || null;
-    const activeCourse = COURSES_WITH_CONTENT.find(
-      (course) => String(course.id) === String(activeCourseId)
-    );
-
     try {
       // Use AI service to get response from Hugging Face
-      const aiResponse = await sendMessageToAI(currentInput, messages, {
-        isAuthenticated,
-        userName: user?.name || 'Learner',
-        enrolledCourseIds,
-        currentPath: pathname,
-        lastViewedCourseId: activeCourseId,
-        activeCourseTitle: activeCourse?.title || null,
-      });
+      const aiResponse = await sendMessageToAI(currentInput, messages);
 
       const botResponse = {
         role: 'assistant',

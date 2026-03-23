@@ -3,12 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, User, X, Minimize2, Loader, Copy, Check } from 'lucide-react';
 import { sendMessageToAI, EXAMPLE_QUESTIONS } from '../services/aiService';
 import ChatbotLogo from './ChatbotLogo';
-import { useAuthStore } from '../store/authStore';
-import COURSES_WITH_CONTENT from '../data/coursesData';
 import './FloatingChatWidget.css';
 
 const FloatingChatWidget = () => {
-  const { isAuthenticated, user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState([
@@ -87,7 +84,7 @@ const FloatingChatWidget = () => {
     setIsLoading(true);
 
     try {
-      const aiResponse = await sendMessageToAI(currentInput, messages, buildUserContext());
+      const aiResponse = await sendMessageToAI(currentInput, messages);
 
       const botResponse = {
         role: 'assistant',
@@ -155,40 +152,6 @@ const FloatingChatWidget = () => {
     if (!isMinimized) {
       setUnreadCount(0);
     }
-  };
-
-  const buildUserContext = () => {
-    const pathname = window.location.pathname;
-    const enrolledCourseIds = isAuthenticated
-      ? JSON.parse(localStorage.getItem('enrolledCourses') || '[]')
-      : [];
-
-    const learningPathMatch = pathname.match(/^\/learn\/(\d+)/);
-    let activeCourseId = learningPathMatch?.[1] || null;
-
-    if (!activeCourseId) {
-      const recentLessonKey = Object.keys(localStorage)
-        .filter((key) => key.startsWith('course_last_lesson_'))
-        .slice(-1)[0];
-
-      if (recentLessonKey) {
-        const parts = recentLessonKey.split('_');
-        activeCourseId = parts.length >= 4 ? parts[3] : null;
-      }
-    }
-
-    const activeCourse = COURSES_WITH_CONTENT.find(
-      (course) => String(course.id) === String(activeCourseId)
-    );
-
-    return {
-      isAuthenticated,
-      userName: user?.name || 'Learner',
-      enrolledCourseIds,
-      currentPath: pathname,
-      lastViewedCourseId: activeCourseId,
-      activeCourseTitle: activeCourse?.title || null,
-    };
   };
 
   return (
