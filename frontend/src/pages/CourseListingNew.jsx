@@ -74,16 +74,26 @@ const CourseListing = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [enrolledCourses, setEnrolledCourses] = useState(() => {
+    if (!isAuthenticated) return [];
     const saved = localStorage.getItem('enrolledCourses');
     return saved ? JSON.parse(saved) : [];
   });
 
+  const visibleEnrolledCourses = isAuthenticated ? enrolledCourses : [];
+
   // Listen for localStorage changes to sync state across components
   useEffect(() => {
+    if (!isAuthenticated) {
+      setEnrolledCourses([]);
+      return undefined;
+    }
+
     const handleStorageChange = () => {
       const saved = localStorage.getItem('enrolledCourses');
       if (saved) {
         setEnrolledCourses(JSON.parse(saved));
+      } else {
+        setEnrolledCourses([]);
       }
     };
 
@@ -103,12 +113,14 @@ const CourseListing = () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('enrollmentUpdated', handleEnrollmentUpdate);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   // Filter & Sort Courses - SHOW ONLY ENROLLED COURSES
   const filteredCourses = useMemo(() => {
+    if (!isAuthenticated) return [];
+
     // First filter: Only show enrolled courses
-    let filtered = ALL_COURSES.filter(course => enrolledCourses.includes(course.id));
+    let filtered = ALL_COURSES.filter(course => visibleEnrolledCourses.includes(course.id));
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -139,7 +151,7 @@ const CourseListing = () => {
     }
 
     return filtered;
-  }, [enrolledCourses, searchQuery, selectedCategory, selectedLevel, sortBy]);
+  }, [isAuthenticated, visibleEnrolledCourses, searchQuery, selectedCategory, selectedLevel, sortBy]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -149,6 +161,11 @@ const CourseListing = () => {
   };
 
   const handleCourseClick = (course) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
     // Since this page now only shows enrolled courses, navigate to player
     navigate(`/learn/${course.id}`);
   };
@@ -173,9 +190,11 @@ const CourseListing = () => {
             My Courses
           </h1>
           <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-            {enrolledCourses.length > 0
-              ? `Continue learning from your ${enrolledCourses.length} enrolled ${enrolledCourses.length === 1 ? 'course' : 'courses'}`
-              : "You haven't enrolled in any courses yet"}
+            {!isAuthenticated
+              ? 'Please sign in to view your enrolled courses'
+              : visibleEnrolledCourses.length > 0
+                ? `Continue learning from your ${visibleEnrolledCourses.length} enrolled ${visibleEnrolledCourses.length === 1 ? 'course' : 'courses'}`
+                : "You haven't enrolled in any courses yet"}
           </p>
         </div>
 
@@ -370,21 +389,25 @@ const CourseListing = () => {
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="text-6xl mb-4">📚</div>
                 <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  {enrolledCourses.length === 0
-                    ? "You haven't enrolled in any courses yet"
-                    : "No courses found"}
+                  {!isAuthenticated
+                    ? 'Sign in to see your enrolled courses'
+                    : visibleEnrolledCourses.length === 0
+                      ? "You haven't enrolled in any courses yet"
+                      : 'No courses found'}
                 </h3>
                 <p style={{ color: 'var(--text-secondary)' }}>
-                  {enrolledCourses.length === 0
-                    ? "Browse our catalog to get started"
-                    : "Try adjusting your filters or search query"}
+                  {!isAuthenticated
+                    ? 'Your learning progress appears here after login'
+                    : visibleEnrolledCourses.length === 0
+                      ? 'Browse our catalog to get started'
+                      : 'Try adjusting your filters or search query'}
                 </p>
                 <button
-                  onClick={() => enrolledCourses.length === 0 ? navigate('/browse') : clearFilters()}
+                  onClick={() => !isAuthenticated ? navigate('/login') : visibleEnrolledCourses.length === 0 ? navigate('/browse') : clearFilters()}
                   className="mt-6 px-6 py-2 rounded-lg font-semibold text-white"
                   style={{ backgroundColor: 'var(--accent-primary)' }}
                 >
-                  {enrolledCourses.length === 0 ? "Browse Courses" : "Clear Filters"}
+                  {!isAuthenticated ? 'Sign In' : visibleEnrolledCourses.length === 0 ? 'Browse Courses' : 'Clear Filters'}
                 </button>
               </div>
             )}
@@ -483,9 +506,15 @@ const CourseListing = () => {
                           ({course.students})
                         </span>
                       </div>
-                      <span className="text-lg font-bold" style={{ color: 'var(--accent-primary)' }}>
-                        {course.price === 0 ? 'FREE' : `₹${course.price}`}
-                      </span>
+                      <div
+                        className="px-3 py-1.5 rounded-lg text-sm font-bold"
+                        style={{
+                          backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                          color: '#22c55e',
+                        }}
+                      >
+                        ✓ Enrolled
+                      </div>
                     </div>
                   </div>
                 </motion.div>

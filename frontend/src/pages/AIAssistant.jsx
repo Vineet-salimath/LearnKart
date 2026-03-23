@@ -2,8 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Sparkles, BookOpen, Award, CreditCard, HelpCircle, Loader, Copy, Check, RotateCcw } from 'lucide-react';
 import { sendMessageToAI, EXAMPLE_QUESTIONS } from '../services/aiService';
+import { useAuthStore } from '../store/authStore';
+import COURSES_WITH_CONTENT from '../data/coursesData';
 
 const AIAssistant = () => {
+  const { isAuthenticated, user } = useAuthStore();
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -83,9 +86,27 @@ const AIAssistant = () => {
     setInput('');
     setIsLoading(true);
 
+    const pathname = window.location.pathname;
+    const enrolledCourseIds = isAuthenticated
+      ? JSON.parse(localStorage.getItem('enrolledCourses') || '[]')
+      : [];
+
+    const learningPathMatch = pathname.match(/^\/learn\/(\d+)/);
+    const activeCourseId = learningPathMatch?.[1] || null;
+    const activeCourse = COURSES_WITH_CONTENT.find(
+      (course) => String(course.id) === String(activeCourseId)
+    );
+
     try {
       // Use AI service to get response from Hugging Face
-      const aiResponse = await sendMessageToAI(currentInput, messages);
+      const aiResponse = await sendMessageToAI(currentInput, messages, {
+        isAuthenticated,
+        userName: user?.name || 'Learner',
+        enrolledCourseIds,
+        currentPath: pathname,
+        lastViewedCourseId: activeCourseId,
+        activeCourseTitle: activeCourse?.title || null,
+      });
 
       const botResponse = {
         role: 'assistant',
@@ -215,8 +236,8 @@ const AIAssistant = () => {
                 {/* Avatar */}
                 <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
                   message.role === 'assistant'
-                    ? 'bg-gradient-to-br from-purple-500 to-blue-500'
-                    : 'bg-gradient-to-br from-gray-600 to-gray-700'
+                    ? 'bg-gradient-to-br from-slate-900 to-black'
+                    : 'bg-gradient-to-br from-gray-600 to-gray-800'
                 }`}>
                   {message.role === 'assistant' ? (
                     <Bot size={20} className="text-white" />
@@ -237,7 +258,7 @@ const AIAssistant = () => {
                       style={{
                         backgroundColor: message.role === 'assistant'
                           ? 'var(--bg-secondary)'
-                          : 'var(--accent-primary)',
+                          : '#111827',
                         color: message.role === 'assistant' ? 'var(--text-primary)' : 'white',
                         border: message.role === 'assistant' ? '1px solid var(--border-primary)' : 'none'
                       }}
@@ -345,7 +366,7 @@ const AIAssistant = () => {
               className="px-6 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
               style={{
                 background: input.trim() && !isLoading
-                  ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))'
+                  ? 'linear-gradient(135deg, #111827, #000000)'
                   : 'var(--bg-tertiary)',
                 color: 'white'
               }}

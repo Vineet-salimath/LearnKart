@@ -215,14 +215,27 @@ export const VideoModal = ({ course, isOpen, onClose, onEnrollClick }) => {
                   </span>
                 </div>
 
-                <span
-                  className="text-2xl font-bold"
-                  style={{ color: 'var(--accent-primary)' }}
-                >
-                  {course.price === 0 ? 'FREE' : `₹${course.price}`}
-                </span>
+                <div className="flex items-center gap-4">
+                  {isEnrolled ? (
+                    <div
+                      className="px-4 py-2 rounded-lg text-sm font-bold"
+                      style={{
+                        backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                        color: '#22c55e',
+                      }}
+                    >
+                      ✓ Enrolled
+                    </div>
+                  ) : (
+                    <span
+                      className="text-2xl font-bold"
+                      style={{ color: 'var(--accent-primary)' }}
+                    >
+                      {course.price === 0 ? 'FREE' : `₹${course.price}`}
+                    </span>
+                  )}
 
-                {isAuthenticated && !isEnrolled && (
+                  {isAuthenticated && !isEnrolled && (
                   <button
                     onClick={onEnrollClick}
                     className="px-6 py-2.5 rounded-lg font-semibold text-white transition-all duration-200"
@@ -245,6 +258,7 @@ export const VideoModal = ({ course, isOpen, onClose, onEnrollClick }) => {
                   </button>
                 )}
               </div>
+            </div>
             </div>
           </motion.div>
         </motion.div>

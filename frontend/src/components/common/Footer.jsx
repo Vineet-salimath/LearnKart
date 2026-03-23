@@ -65,11 +65,11 @@ export const Footer = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Phone size={16} className="text-blue-400" />
-                <a href="tel:+1234567890" className="hover:text-white transition">+1 (234) 567-890</a>
+                <a href="tel:+918012345678" className="hover:text-white transition">+91 (80) 1234-5678</a>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin size={16} className="text-blue-400" />
-                <span>San Francisco, CA, USA</span>
+                <span>Bangalore, India</span>
               </div>
             </div>
           </div>
@@ -161,7 +161,7 @@ export const Footer = () => {
         {/* Footer Bottom Accent */}
         <div className="mt-8 pt-8 border-t border-gray-700/50 text-center">
           <p className="text-gray-600 text-xs">
-            Built with <span className="text-red-400">❤️</span> by innovators. Made for learners worldwide.
+            Built by Vineet Salimath <span className="text-red-400">❤️</span>
           </p>
         </div>
       </div>

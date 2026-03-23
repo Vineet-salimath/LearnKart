@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, X, Star, Play, Lock } from 'lucide-react';
+import { Search, X, Star, Play, Lock, ShoppingCart } from 'lucide-react';
 import { VideoModal } from '../components/course/VideoModal';
 import EnrollmentModal from '../components/enrollment/EnrollmentModal';
 import { useAuthStore } from '../store/authStore';
+import { useCartStore } from '../store/cartStore';
 import { useToast } from '../components/ui/Toast';
 
 // All 30 Courses Data
@@ -48,6 +49,7 @@ const SORT_OPTIONS = ['Default', 'Highest Rated', 'Price: Low to High', 'Price: 
 const Browse = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const { addToCart, items: cartItems } = useCartStore();
   const { showToast, ToastContainer } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -56,16 +58,25 @@ const Browse = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [enrolledCourses, setEnrolledCourses] = useState(() => {
+    if (!isAuthenticated) return [];
     const saved = localStorage.getItem('enrolledCourses');
     return saved ? JSON.parse(saved) : [];
   });
+  const visibleEnrolledCourses = isAuthenticated ? enrolledCourses : [];
 
   // Listen for localStorage changes to sync state across components
   useEffect(() => {
+    if (!isAuthenticated) {
+      setEnrolledCourses([]);
+      return undefined;
+    }
+
     const handleStorageChange = () => {
       const saved = localStorage.getItem('enrolledCourses');
       if (saved) {
         setEnrolledCourses(JSON.parse(saved));
+      } else {
+        setEnrolledCourses([]);
       }
     };
 
@@ -85,7 +96,7 @@ const Browse = () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('enrollmentUpdated', handleEnrollmentUpdate);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   // Filter & Sort Courses
   const filteredCourses = useMemo(() => {
@@ -129,8 +140,41 @@ const Browse = () => {
     setSortBy('Default');
   };
 
+  const handleAddToCart = (e, course) => {
+    e.stopPropagation(); // Prevent card click event
+
+    // Check if already in cart
+    const alreadyInCart = cartItems.find(item => item.id === course.id);
+    if (alreadyInCart) {
+      showToast('Course already in cart!', 'info', 3000);
+      return;
+    }
+
+    // Add course to cart with proper structure
+    const courseWithDetails = {
+      ...course,
+      thumbnail: `https://img.youtube.com/vi/${course.ytId}/hqdefault.jpg`,
+      instructor: {
+        name: course.author,
+        avatar: null,
+      },
+      discountPrice: null, // Can be set if there are discounts
+      totalDuration: 12 * 3600, // Default 12 hours in seconds
+    };
+
+    addToCart(courseWithDetails);
+    showToast(`${course.title} added to cart!`, 'success', 3000);
+  };
+
+  const handleBuyNow = (e, course) => {
+    e.stopPropagation(); // Prevent card click event
+
+    // Navigate directly to checkout with course ID
+    navigate(`/checkout?courseId=${course.id}`);
+  };
+
   const handleCourseClick = (course) => {
-    if (enrolledCourses.includes(course.id)) {
+    if (visibleEnrolledCourses.includes(course.id)) {
       // Already enrolled, go directly to course
       navigate(`/learn/${course.id}`);
     } else {
@@ -141,8 +185,13 @@ const Browse = () => {
   };
 
   const handleEnrollmentSuccess = (course) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
     // Update state
-    const updatedEnrolledCourses = [...enrolledCourses, course.id];
+    const updatedEnrolledCourses = [...visibleEnrolledCourses, course.id];
     setEnrolledCourses(updatedEnrolledCourses);
     localStorage.setItem('enrolledCourses', JSON.stringify(updatedEnrolledCourses));
 
@@ -388,8 +437,7 @@ const Browse = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05, duration: 0.3 }}
-                  onClick={() => handleCourseClick(course)}
-                  className="group cursor-pointer rounded-xl overflow-hidden transition-all duration-300"
+                  className="group rounded-xl overflow-hidden transition-all duration-300"
                   style={{
                     backgroundColor: 'var(--surface)',
                     border: `1px solid var(--border)`,
@@ -406,7 +454,11 @@ const Browse = () => {
                   }}
                 >
                   {/* Thumbnail */}
-                  <div className="relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                  <div
+                    className="relative overflow-hidden cursor-pointer"
+                    style={{ aspectRatio: '16/9' }}
+                    onClick={() => handleCourseClick(course)}
+                  >
                     <img
                       src={`https://img.youtube.com/vi/${course.ytId}/hqdefault.jpg`}
                       alt={course.title}
@@ -422,7 +474,7 @@ const Browse = () => {
                         className="w-16 h-16 rounded-full flex items-center justify-center"
                         style={{ backgroundColor: 'var(--accent-primary)' }}
                       >
-                        {enrolledCourses.includes(course.id) ? (
+                        {visibleEnrolledCourses.includes(course.id) ? (
                           <Play className="fill-white" size={24} style={{ color: 'white' }} />
                         ) : (
                           <Lock className="fill-white" size={24} style={{ color: 'white' }} />
@@ -464,7 +516,7 @@ const Browse = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
                       <div className="flex items-center gap-1">
                         <Star className="fill-yellow-400" size={16} style={{ color: '#fbbf24' }} />
                         <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -474,20 +526,85 @@ const Browse = () => {
                           ({course.students})
                         </span>
                       </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-lg font-bold mb-1" style={{ color: 'var(--accent-primary)' }}>
-                          {course.price === 0 ? 'FREE' : `₹${course.price}`}
-                        </span>
-                        <span
-                          className="text-xs font-semibold px-2 py-1 rounded"
+                      {visibleEnrolledCourses.includes(course.id) ? (
+                        <div
+                          className="px-3 py-1.5 rounded-lg text-sm font-bold"
                           style={{
-                            backgroundColor: enrolledCourses.includes(course.id) ? 'rgba(34, 197, 94, 0.1)' : 'rgba(139, 110, 245, 0.1)',
-                            color: enrolledCourses.includes(course.id) ? '#22c55e' : 'var(--accent-primary)'
+                            backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                            color: '#22c55e',
                           }}
                         >
-                          {enrolledCourses.includes(course.id) ? 'Go to Course' : course.price === 0 ? 'Enroll Free' : 'Enroll Now'}
-                        </span>
-                      </div>
+                          ✓ Enrolled
+                        </div>
+                      ) : (
+                        <div className="text-lg font-bold" style={{ color: 'var(--accent-primary)' }}>
+                          {course.price === 0 ? 'FREE' : `₹${course.price}`}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="mt-4 space-y-2">
+                      {visibleEnrolledCourses.includes(course.id) ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/learn/${course.id}`);
+                          }}
+                          className="w-full px-4 py-2.5 rounded-lg font-semibold text-white transition-all duration-200"
+                          style={{ backgroundColor: '#22c55e' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#16a34a';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#22c55e';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                          }}
+                        >
+                          Go to Course →
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={(e) => handleBuyNow(e, course)}
+                            className="w-full px-4 py-2.5 rounded-lg font-semibold text-white transition-all duration-200"
+                            style={{ backgroundColor: 'var(--accent-primary)' }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'var(--accent-dark)';
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'var(--accent-primary)';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                          >
+                            {course.price === 0 ? 'Enroll Free' : 'Buy Now'}
+                          </button>
+                          {course.price > 0 && (
+                            <button
+                              onClick={(e) => handleAddToCart(e, course)}
+                              className="w-full px-4 py-2.5 rounded-lg font-semibold border transition-all duration-200 flex items-center justify-center gap-2"
+                              style={{
+                                backgroundColor: 'transparent',
+                                borderColor: 'var(--accent-primary)',
+                                color: 'var(--accent-primary)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--bg3)';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                              }}
+                            >
+                              <ShoppingCart size={18} />
+                              Add to Cart
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -499,7 +616,7 @@ const Browse = () => {
 
       {/* Video Modal */}
       {/* Show EnrollmentModal for non-enrolled courses, VideoModal for enrolled */}
-      {selectedCourse && enrolledCourses.includes(selectedCourse.id) ? (
+      {selectedCourse && visibleEnrolledCourses.includes(selectedCourse.id) ? (
         <VideoModal
           course={selectedCourse}
           isOpen={modalOpen}

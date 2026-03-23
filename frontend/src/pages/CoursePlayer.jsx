@@ -1,329 +1,653 @@
-import { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Maximize,
-  CheckCircle,
+  ArrowLeft,
+  Award,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
-  ArrowLeft,
+  Circle,
+  Clock3,
+  Lock,
+  Menu,
+  PlayCircle,
+  X,
 } from 'lucide-react';
+import Certificate from '../components/certificate/Certificate';
+import { useAuthStore } from '../store/authStore';
+import {
+  checkEnrollment,
+  getCourseContent,
+  getCourseProgress,
+  saveLessonProgress,
+} from '../services/coursePlayerService';
 
-//All courses data with sections
-const ALL_COURSES = [
-  {
-    id: 1,
-    title: 'React Full Course',
-    author: 'Traversy Media',
-    cat: 'React/Next/TS',
-    lvl: 'Beginner',
-    price: 199,
-    rating: 4.8,
-    students: '32K',
-    ytId: 'bMknfKXIFA8',
-    sections: [
-      {
-        id: 1,
-        title: 'Introduction',
-        lessons: [
-          { id: 1, title: 'What is React?', duration: '5:23', videoUrl: 'bMknfKXIFA8', completed: false },
-          { id: 2, title: 'Setting up Environment', duration: '10:15', videoUrl: 'bMknfKXIFA8', completed: false },
-        ]
-      },
-      {
-        id: 2,
-        title: 'React Fundamentals',
-        lessons: [
-          { id: 3, title: 'Components & JSX', duration: '15:42', videoUrl: 'bMknfKXIFA8', completed: false },
-          { id: 4, title: 'Props & State', duration: '12:30', videoUrl: 'bMknfKXIFA8', completed: false },
-          { id: 5, title: 'Hooks Introduction', duration: '18:20', videoUrl: 'bMknfKXIFA8', completed: false },
-        ]
-      },
-      {
-        id: 3,
-        title: 'Advanced Concepts',
-        lessons: [
-          { id: 6, title: 'Context API', duration: '14:55', videoUrl: 'bMknfKXIFA8', completed: false },
-          { id: 7, title: 'Custom Hooks', duration: '16:10', videoUrl: 'bMknfKXIFA8', completed: false },
-        ]
+let youtubeApiLoader;
+
+const loadYouTubeAPI = () => {
+  if (window.YT?.Player) {
+    return Promise.resolve(window.YT);
+  }
+
+  if (youtubeApiLoader) {
+    return youtubeApiLoader;
+  }
+
+  youtubeApiLoader = new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+
+    const existingCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof existingCallback === 'function') {
+        existingCallback();
       }
-    ]
-  },
-  {
-    id: 2,
-    title: 'Next.js Full Course',
-    author: 'Vercel Team',
-    cat: 'React/Next/TS',
-    lvl: 'Intermediate',
-    price: 299,
-    rating: 4.7,
-    students: '18K',
-    ytId: 'wm5gMKuwSYk',
-    sections: [
-      {
-        id: 1,
-        title: 'Getting Started',
-        lessons: [
-          { id: 1, title: 'Introduction to Next.js', duration: '8:15', videoUrl: 'wm5gMKuwSYk', completed: false },
-          { id: 2, title: 'Pages & Routing', duration: '12:30', videoUrl: 'wm5gMKuwSYk', completed: false },
-        ]
-      }
-    ]
-  },
-];
+      resolve(window.YT);
+    };
+
+    document.body.appendChild(script);
+  });
+
+  return youtubeApiLoader;
+};
 
 const CoursePlayer = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
 
   const [course, setCourse] = useState(null);
-  const [currentLesson, setCurrentLesson] = useState(null);
-  const [expandedSections, setExpandedSections] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [activeLessonId, setActiveLessonId] = useState('');
+  const [expandedModules, setExpandedModules] = useState({});
+  const [progressByLesson, setProgressByLesson] = useState({});
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showCertificate, setShowCertificate] = useState(false);
+  const [watchSeconds, setWatchSeconds] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
 
-  // Check enrollment
-  useEffect(() => {
-    const enrolledCourses = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
-    const isEnrolled = enrolledCourses.includes(parseInt(courseId));
+  const playerHostRef = useRef(null);
+  const playerInstanceRef = useRef(null);
+  const watchIntervalRef = useRef(null);
+  const autoCompletedLessonRef = useRef(null);
 
-    if (!isEnrolled) {
-      navigate('/courses');
-      return;
-    }
+  const allLessons = useMemo(() => {
+    if (!course) return [];
 
-    const foundCourse = ALL_COURSES.find(c => c.id === parseInt(courseId));
-    if (foundCourse) {
-      // Load progress from localStorage
-      const savedProgress = JSON.parse(localStorage.getItem(`course_${courseId}_progress`) || '{}');
-
-      // Merge saved completion status
-      const updatedCourse = {
-        ...foundCourse,
-        sections: foundCourse.sections.map(section => ({
-          ...section,
-          lessons: section.lessons.map(lesson => ({
-            ...lesson,
-            completed: savedProgress[lesson.id] || false
-          }))
-        }))
-      };
-
-      setCourse(updatedCourse);
-      setCurrentLesson(updatedCourse.sections[0].lessons[0]);
-      setExpandedSections({ 1: true }); // Expand first section
-    }
-  }, [courseId, navigate]);
-
-  const selectLesson = (lesson) => {
-    setCurrentLesson(lesson);
-  };
-
-  const markLessonComplete = () => {
-    if (!currentLesson || !course) return;
-
-    // Update local state
-    const updatedCourse = {
-      ...course,
-      sections: course.sections.map(section => ({
-        ...section,
-        lessons: section.lessons.map(lesson =>
-          lesson.id === currentLesson.id ? { ...lesson, completed: true } : lesson
-        )
+    return course.modules.flatMap((module) =>
+      module.lessons.map((lesson) => ({
+        ...lesson,
+        moduleId: module.id,
+        moduleTitle: module.title,
       }))
-    };
-    setCourse(updatedCourse);
+    );
+  }, [course]);
 
-    // Save to localStorage
-    const progress = {};
-    updatedCourse.sections.forEach(section => {
-      section.lessons.forEach(lesson => {
-        if (lesson.completed) {
-          progress[lesson.id] = true;
-        }
-      });
+  const lessonIndexMap = useMemo(() => {
+    const map = {};
+    allLessons.forEach((lesson, index) => {
+      map[lesson.id] = index;
     });
-    localStorage.setItem(`course_${courseId}_progress`, JSON.stringify(progress));
+    return map;
+  }, [allLessons]);
 
-    // Award XP
-    const userStats = JSON.parse(localStorage.getItem('userStats') || '{}');
-    userStats.totalXp = (userStats.totalXp || 0) + 5;
-    localStorage.setItem('userStats', JSON.stringify(userStats));
+  const activeLesson = useMemo(
+    () => allLessons.find((lesson) => lesson.id === activeLessonId) || allLessons[0] || null,
+    [allLessons, activeLessonId]
+  );
+
+  const completedCount = useMemo(
+    () => allLessons.filter((lesson) => progressByLesson[lesson.id]?.completed).length,
+    [allLessons, progressByLesson]
+  );
+
+  const progressPercent = useMemo(() => {
+    if (!allLessons.length) return 0;
+    return Math.round((completedCount / allLessons.length) * 100);
+  }, [allLessons.length, completedCount]);
+
+  const nextLesson = useMemo(() => {
+    if (!activeLesson) return null;
+
+    const currentIndex = lessonIndexMap[activeLesson.id];
+    if (typeof currentIndex !== 'number') return null;
+
+    return allLessons[currentIndex + 1] || null;
+  }, [activeLesson, allLessons, lessonIndexMap]);
+
+  const getResumeKey = (lessonId) => `course_resume_${courseId}_${lessonId}_${user?.id || 'guest'}`;
+
+  const isLessonLocked = (lesson) => !isEnrolled && !lesson.isFree;
+
+  const stopWatchPolling = () => {
+    if (watchIntervalRef.current) {
+      clearInterval(watchIntervalRef.current);
+      watchIntervalRef.current = null;
+    }
   };
 
-  const toggleSection = (sectionId) => {
-    setExpandedSections(prev => ({
+  const persistPlaybackState = async (lesson, options = {}) => {
+    if (!lesson) return;
+
+    const fallbackState = progressByLesson[lesson.id] || {};
+    const currentSeconds = options.currentSeconds ?? fallbackState.watchSeconds ?? 0;
+    const resumeAt = options.resumeAt ?? fallbackState.resumeAt ?? 0;
+    const completed = Boolean(options.completed ?? fallbackState.completed ?? false);
+
+    const updatedEntry = await saveLessonProgress({
+      courseId,
+      lessonId: lesson.id,
+      userId: user?.id,
+      completed,
+      watchSeconds: Math.floor(currentSeconds),
+      resumeAt: Math.floor(resumeAt),
+    });
+
+    setProgressByLesson((prev) => ({
       ...prev,
-      [sectionId]: !prev[sectionId]
+      [lesson.id]: {
+        ...(prev[lesson.id] || {}),
+        ...updatedEntry,
+      },
     }));
   };
 
-  const calculateCompletionPercent = () => {
-    if (!course) return 0;
-    let total = 0;
-    let completed = 0;
-    course.sections.forEach(section => {
-      section.lessons.forEach(lesson => {
-        total++;
-        if (lesson.completed) completed++;
-      });
+  const markLessonComplete = async (lesson) => {
+    if (!lesson) return;
+
+    const player = playerInstanceRef.current;
+    const currentSeconds = player?.getCurrentTime ? player.getCurrentTime() : watchSeconds;
+
+    await persistPlaybackState(lesson, {
+      completed: true,
+      currentSeconds,
+      resumeAt: currentSeconds,
     });
-    return total > 0 ? Math.round((completed / total) * 100) : 0;
   };
 
-  if (!course || !currentLesson) {
+  const handleLessonSelect = (lesson) => {
+    if (!lesson || isLessonLocked(lesson)) return;
+    setActiveLessonId(lesson.id);
+  };
+
+  const toggleModule = (moduleId) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [moduleId]: !prev[moduleId],
+    }));
+  };
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const loadedCourse = await getCourseContent(courseId);
+
+        if (!loadedCourse || !loadedCourse.modules?.length) {
+          setError('Course content is unavailable right now.');
+          setLoading(false);
+          return;
+        }
+
+        const enrolled = await checkEnrollment({ courseId, userId: user?.id });
+        const courseProgress = await getCourseProgress({
+          course: loadedCourse,
+          userId: user?.id,
+        });
+
+        setCourse(loadedCourse);
+        setIsEnrolled(enrolled);
+        setProgressByLesson(courseProgress);
+
+        const moduleExpansion = {};
+        loadedCourse.modules.forEach((module, index) => {
+          moduleExpansion[module.id] = index === 0;
+        });
+        setExpandedModules(moduleExpansion);
+
+        const unlockedLessons = loadedCourse.modules
+          .flatMap((module) => module.lessons)
+          .filter((lesson) => enrolled || lesson.isFree);
+
+        const savedLessonId = localStorage.getItem(`course_last_lesson_${courseId}_${user?.id || 'guest'}`);
+        const validSavedLesson = unlockedLessons.find((lesson) => lesson.id === savedLessonId);
+
+        const firstIncomplete = unlockedLessons.find(
+          (lesson) => !courseProgress[lesson.id]?.completed
+        );
+
+        const startingLesson =
+          validSavedLesson || firstIncomplete || unlockedLessons[0] || loadedCourse.modules[0].lessons[0];
+
+        setActiveLessonId(startingLesson?.id || '');
+      } catch (err) {
+        setError(err.message || 'Unable to load course player.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    bootstrap();
+  }, [courseId, user?.id]);
+
+  useEffect(() => {
+    if (!activeLessonId) return;
+    localStorage.setItem(
+      `course_last_lesson_${courseId}_${user?.id || 'guest'}`,
+      activeLessonId
+    );
+  }, [activeLessonId, courseId, user?.id]);
+
+  useEffect(() => {
+    if (!activeLesson || isLessonLocked(activeLesson)) {
+      stopWatchPolling();
+      if (playerInstanceRef.current) {
+        playerInstanceRef.current.destroy();
+        playerInstanceRef.current = null;
+      }
+      return undefined;
+    }
+
+    let canceled = false;
+
+    const setupPlayer = async () => {
+      await loadYouTubeAPI();
+      if (canceled || !playerHostRef.current || !window.YT?.Player) return;
+
+      if (playerInstanceRef.current) {
+        playerInstanceRef.current.destroy();
+        playerInstanceRef.current = null;
+      }
+
+      autoCompletedLessonRef.current = null;
+
+      playerInstanceRef.current = new window.YT.Player(playerHostRef.current, {
+        videoId: activeLesson.videoId,
+        playerVars: {
+          rel: 0,
+          modestbranding: 1,
+        },
+        events: {
+          onReady: (event) => {
+            const duration = event.target.getDuration?.() || activeLesson.durationSeconds || 0;
+            setVideoDuration(duration);
+
+            const resumeState = progressByLesson[activeLesson.id] || {};
+            const savedResumeAt = Number(resumeState.resumeAt || localStorage.getItem(getResumeKey(activeLesson.id)) || 0);
+
+            if (savedResumeAt > 0 && savedResumeAt < duration - 5) {
+              event.target.seekTo(savedResumeAt, true);
+              setWatchSeconds(savedResumeAt);
+            } else {
+              setWatchSeconds(0);
+            }
+          },
+          onStateChange: (event) => {
+            const state = event.data;
+            const ytStates = window.YT.PlayerState;
+
+            if (state === ytStates.PLAYING) {
+              stopWatchPolling();
+              watchIntervalRef.current = setInterval(async () => {
+                const player = playerInstanceRef.current;
+                if (!player?.getCurrentTime) return;
+
+                const current = player.getCurrentTime();
+                const duration = player.getDuration() || activeLesson.durationSeconds || 0;
+
+                setWatchSeconds(current);
+                setVideoDuration(duration);
+
+                if (Math.floor(current) % 5 === 0) {
+                  localStorage.setItem(getResumeKey(activeLesson.id), String(Math.floor(current)));
+                  await persistPlaybackState(activeLesson, {
+                    currentSeconds: current,
+                    resumeAt: current,
+                    completed: progressByLesson[activeLesson.id]?.completed,
+                  });
+                }
+
+                if (
+                  duration > 0 &&
+                  current / duration >= 0.92 &&
+                  !progressByLesson[activeLesson.id]?.completed &&
+                  autoCompletedLessonRef.current !== activeLesson.id
+                ) {
+                  autoCompletedLessonRef.current = activeLesson.id;
+                  await markLessonComplete(activeLesson);
+                }
+              }, 1000);
+            }
+
+            if (state === ytStates.PAUSED) {
+              stopWatchPolling();
+              const player = playerInstanceRef.current;
+              const current = player?.getCurrentTime ? player.getCurrentTime() : 0;
+              localStorage.setItem(getResumeKey(activeLesson.id), String(Math.floor(current)));
+              persistPlaybackState(activeLesson, {
+                currentSeconds: current,
+                resumeAt: current,
+                completed: progressByLesson[activeLesson.id]?.completed,
+              });
+            }
+
+            if (state === ytStates.ENDED) {
+              stopWatchPolling();
+              localStorage.setItem(getResumeKey(activeLesson.id), '0');
+              markLessonComplete(activeLesson);
+            }
+          },
+        },
+      });
+    };
+
+    setupPlayer();
+
+    return () => {
+      canceled = true;
+      stopWatchPolling();
+      if (playerInstanceRef.current) {
+        playerInstanceRef.current.destroy();
+        playerInstanceRef.current = null;
+      }
+    };
+  }, [activeLesson?.id, activeLesson?.videoId, isEnrolled]);
+
+  const outlinePanel = (
+    <div className="h-full bg-slate-950 border-l border-slate-800 flex flex-col">
+      <div className="px-5 py-4 border-b border-slate-800">
+        <p className="text-xs font-semibold tracking-[0.14em] uppercase text-slate-400">Course Outline</p>
+        <p className="text-sm text-slate-300 mt-1">{allLessons.length} lessons</p>
+      </div>
+
+      <div className="overflow-y-auto px-4 py-4 space-y-3">
+        {course?.modules.map((module, moduleIndex) => (
+          <div key={module.id} className="rounded-xl border border-slate-800 bg-slate-900/70">
+            <button
+              type="button"
+              onClick={() => toggleModule(module.id)}
+              className="w-full flex items-center justify-between px-3 py-3 text-left"
+            >
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Module {moduleIndex + 1}</p>
+                <p className="text-sm font-semibold text-slate-100 mt-1">{module.title}</p>
+              </div>
+              {expandedModules[module.id] ? (
+                <ChevronUp size={16} className="text-slate-400" />
+              ) : (
+                <ChevronDown size={16} className="text-slate-400" />
+              )}
+            </button>
+
+            <AnimatePresence initial={false}>
+              {expandedModules[module.id] && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <ul className="pb-2">
+                    {module.lessons.map((lesson) => {
+                      const isActive = lesson.id === activeLesson?.id;
+                      const isCompleted = Boolean(progressByLesson[lesson.id]?.completed);
+                      const locked = isLessonLocked(lesson);
+
+                      return (
+                        <li key={lesson.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleLessonSelect(lesson)}
+                            disabled={locked}
+                            className={`w-full px-3 py-2.5 flex items-start gap-3 text-left transition ${
+                              isActive
+                                ? 'bg-sky-500/15 border-l-2 border-sky-400'
+                                : 'hover:bg-slate-800/70 border-l-2 border-transparent'
+                            } ${locked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                          >
+                            <span className="mt-0.5 text-slate-400">
+                              {locked ? (
+                                <Lock size={15} />
+                              ) : isCompleted ? (
+                                <CheckCircle2 size={15} className="text-emerald-400" />
+                              ) : (
+                                <Circle size={15} className="text-slate-500" />
+                              )}
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <span
+                                className={`block text-sm truncate ${
+                                  isActive ? 'text-sky-300 font-semibold' : 'text-slate-200'
+                                }`}
+                              >
+                                {lesson.title}
+                              </span>
+                              <span className="text-xs text-slate-500 mt-1 inline-flex items-center gap-1">
+                                <Clock3 size={12} />
+                                {lesson.duration}
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  if (loading) {
     return (
-      <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-primary)' }}>Loading...</p>
+      <div className="min-h-screen bg-slate-950 grid place-items-center text-slate-300">
+        Loading course player...
       </div>
     );
   }
 
-  const completionPercent = calculateCompletionPercent();
+  if (error || !course || !activeLesson) {
+    return (
+      <div className="min-h-screen bg-slate-950 grid place-items-center px-6">
+        <div className="max-w-lg text-center">
+          <p className="text-slate-200 text-lg font-semibold">Unable to open this course</p>
+          <p className="text-slate-400 mt-2">{error || 'The course or lesson could not be loaded.'}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/courses')}
+            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-400"
+          >
+            <ArrowLeft size={16} />
+            Back to Courses
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="player-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', height: '100vh', backgroundColor: '#0a0a0a' }}>
-      {/* Left: Video + Content */}
-      <div className="player-main" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Video Player */}
-        <div
-          className="video-wrapper"
-          style={{ position: 'relative', backgroundColor: '#000', aspectRatio: '16/9', width: '100%' }}
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <header className="h-16 border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-40 px-4 md:px-6 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => navigate('/courses')}
+          className="p-2 rounded-md text-slate-400 hover:bg-slate-800 hover:text-white"
+          aria-label="Back to courses"
         >
-          {/* YouTube Embed */}
-          <iframe
-            src={`https://www.youtube.com/embed/${currentLesson.videoUrl}?rel=0&modestbranding=1`}
-            title={currentLesson.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            style={{ width: '100%', height: '100%', border: 'none' }}
-          />
+          <ArrowLeft size={18} />
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-slate-500 truncate">{course.title}</p>
+          <h1 className="text-sm md:text-base font-semibold truncate">{activeLesson.title}</h1>
         </div>
 
-        {/* Lesson Info */}
-        <div className="lesson-info" style={{ padding: '24px', backgroundColor: '#111', color: '#fff', flex: 1, overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-            <div style={{ flex: 1 }}>
-              <button
-                onClick={() => navigate('/courses')}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px' }}
-              >
-                <ArrowLeft size={16} />
-                Back to Courses
-              </button>
-              <h2 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px', color: '#fff' }}>{currentLesson.title}</h2>
-              <p style={{ fontSize: '14px', color: '#aaa' }}>{course.author} · {course.title}</p>
-            </div>
-            {!currentLesson.completed && (
-              <button
-                onClick={markLessonComplete}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 16px',
-                  background: 'var(--accent-primary)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#fff',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                }}
-              >
-                <CheckCircle size={18} />
-                Mark as Complete
-              </button>
+        <div className="text-right mr-1">
+          <p className="text-sm font-semibold text-sky-300">{progressPercent}%</p>
+          <p className="text-xs text-slate-400">Complete</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          className="p-2 rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800"
+          aria-label="Open course structure"
+        >
+          <Menu size={18} />
+        </button>
+      </header>
+
+      <main className="grid lg:grid-cols-[330px_1fr] min-h-[calc(100vh-64px)]">
+        <aside className="hidden lg:block border-r border-slate-800">{outlinePanel}</aside>
+
+        <section className="min-w-0">
+          <div className="bg-black aspect-video relative">
+            {isLessonLocked(activeLesson) ? (
+              <div className="h-full w-full grid place-items-center bg-slate-900/85">
+                <div className="text-center px-6">
+                  <Lock size={28} className="mx-auto text-amber-400" />
+                  <h2 className="text-lg font-semibold mt-3">Enroll to access this lesson</h2>
+                  <p className="text-sm text-slate-400 mt-2">This content is locked until enrollment is complete.</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/payment?courseId=${courseId}`)}
+                    className="mt-4 rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold hover:bg-sky-400"
+                  >
+                    Enroll Now
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div ref={playerHostRef} className="h-full w-full" />
             )}
           </div>
 
-          {/* Progress */}
-          <div style={{ marginTop: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>Course Progress</span>
-              <span style={{ fontSize: '14px', color: '#aaa' }}>{completionPercent}% complete</span>
-            </div>
-            <div className="course-progress-bar" style={{ height: '8px', backgroundColor: '#222', borderRadius: '4px', overflow: 'hidden' }}>
-              <div className="bar-fill" style={{ width: `${completionPercent}%`, height: '100%', backgroundColor: 'var(--accent-primary)', transition: 'width 0.3s' }} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right: Curriculum Sidebar */}
-      <div className="curriculum-sidebar" style={{ backgroundColor: '#111', borderLeft: '1px solid #222', overflowY: 'auto' }}>
-        <div style={{ padding: '20px', borderBottom: '1px solid #222' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', marginBottom: '4px' }}>Course Content</h3>
-          <p style={{ fontSize: '13px', color: '#666' }}>
-            {course.sections.reduce((acc, s) => acc + s.lessons.length, 0)} lessons
-          </p>
-        </div>
-
-        {course.sections.map((section) => (
-          <div key={section.id} className="section">
-            <div
-              className="section-header"
-              onClick={() => toggleSection(section.id)}
-              style={{
-                padding: '14px 16px',
-                backgroundColor: '#1a1a1a',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#ccc',
-                cursor: 'pointer',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderBottom: '1px solid #222',
-              }}
-            >
-              <span>{section.title}</span>
-              {expandedSections[section.id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </div>
-
-            {expandedSections[section.id] && section.lessons.map((lesson) => (
-              <div
-                key={lesson.id}
-                className={`lesson-item ${lesson.id === currentLesson.id ? 'active' : ''} ${lesson.completed ? 'completed' : ''}`}
-                onClick={() => selectLesson(lesson)}
-                style={{
-                  display: 'flex',
-                  gap: '12px',
-                  alignItems: 'flex-start',
-                  padding: '12px 16px',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid #1a1a1a',
-                  transition: 'background 0.15s',
-                  backgroundColor: lesson.id === currentLesson.id ? 'rgba(167,139,250,0.15)' : 'transparent',
-                  borderLeft: lesson.id === currentLesson.id ? '3px solid var(--accent-primary)' : '3px solid transparent',
-                }}
-                onMouseEnter={(e) => {
-                  if (lesson.id !== currentLesson.id) {
-                    e.currentTarget.style.backgroundColor = 'rgba(167,139,250,0.08)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (lesson.id !== currentLesson.id) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
-              >
-                <span className="lesson-icon" style={{ flexShrink: 0, fontSize: '16px' }}>
-                  {lesson.completed ? '✅' : lesson.id === currentLesson.id ? '▶️' : '⭕'}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <p className="lesson-name" style={{ fontSize: '13px', color: lesson.completed ? '#666' : '#ccc', marginBottom: '4px', fontWeight: lesson.id === currentLesson.id ? '600' : '400' }}>
-                    {lesson.title}
+          <div className="px-4 md:px-6 py-6 space-y-5">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.12em] text-slate-500">
+                    Lesson {(lessonIndexMap[activeLesson.id] ?? 0) + 1} of {allLessons.length}
                   </p>
-                  <span className="lesson-duration" style={{ fontSize: '11px', color: '#555' }}>{lesson.duration}</span>
+                  <h2 className="text-2xl font-semibold mt-2">{activeLesson.title}</h2>
+                  <p className="text-slate-400 text-sm mt-2 inline-flex items-center gap-2">
+                    <Clock3 size={14} />
+                    Duration: {activeLesson.duration} | Watched: {Math.floor(watchSeconds)}s
+                  </p>
+                </div>
+
+                <div className="text-right min-w-[180px]">
+                  <p className="text-xs text-slate-500">Course Progress</p>
+                  <p className="text-2xl font-bold text-sky-300 mt-1">{progressPercent}%</p>
                 </div>
               </div>
-            ))}
+
+              <div className="mt-4 h-2 bg-slate-800 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-sky-500 to-cyan-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 0.35 }}
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                {completedCount} of {allLessons.length} lessons completed
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              {!progressByLesson[activeLesson.id]?.completed && !isLessonLocked(activeLesson) && (
+                <button
+                  type="button"
+                  onClick={() => markLessonComplete(activeLesson)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold hover:bg-emerald-400"
+                >
+                  <CheckCircle2 size={16} />
+                  Mark Lesson Complete
+                </button>
+              )}
+
+              {nextLesson && !isLessonLocked(nextLesson) && (
+                <button
+                  type="button"
+                  onClick={() => setActiveLessonId(nextLesson.id)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800"
+                >
+                  <PlayCircle size={16} />
+                  Next Lesson
+                </button>
+              )}
+            </div>
+
+            {progressPercent === 100 && (
+              <button
+                type="button"
+                onClick={() => setShowCertificate(true)}
+                className="w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 px-5 py-3 text-sm font-semibold"
+              >
+                <Award size={18} />
+                Download Certificate
+              </button>
+            )}
+
+            {!isAuthenticated && (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+                You are viewing as guest. Sign in for synced progress and enrollment access.
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+        </section>
+      </main>
+
+      <AnimatePresence>
+        {drawerOpen && (
+          <>
+            <motion.div
+              className="fixed inset-0 z-40 bg-black/65"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDrawerOpen(false)}
+            />
+            <motion.aside
+              className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+            >
+              <div className="h-16 border-b border-slate-800 bg-slate-950 px-4 flex items-center justify-between">
+                <p className="text-sm font-semibold">Full Course Structure</p>
+                <button
+                  type="button"
+                  onClick={() => setDrawerOpen(false)}
+                  className="p-2 rounded-md text-slate-300 hover:bg-slate-800"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              {outlinePanel}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      <Certificate
+        isOpen={showCertificate}
+        onClose={() => setShowCertificate(false)}
+        course={{ ...course, title: course.title }}
+        userName={user?.name || 'Student'}
+        completionDate={new Date().toISOString()}
+      />
     </div>
   );
 };

@@ -200,12 +200,12 @@ const Checkout = () => {
         </div>
       ) : (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* LEFT COLUMN - Course Info */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            {/* LEFT COLUMN - Course Info (Spans 2 columns) */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="rounded-xl p-6"
+              className="lg:col-span-2 rounded-xl p-6 h-fit"
               style={{
                 backgroundColor: 'var(--surface)',
                 border: `1px solid var(--border)`,
@@ -295,13 +295,14 @@ const Checkout = () => {
               </div>
             </motion.div>
 
-            {/* CENTER COLUMN - Coupon */}
+            {/* RIGHT COLUMN - Checkout Actions (Spans 3 columns) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="space-y-6"
+              className="lg:col-span-3 space-y-6"
             >
+              {/* Coupon Section */}
               <div
                 className="rounded-xl p-6"
                 style={{
@@ -485,19 +486,15 @@ const Checkout = () => {
                   </div>
                 </div>
               </div>
-            </motion.div>
 
-            {/* RIGHT COLUMN - Payment Methods */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="rounded-xl p-6"
-              style={{
-                backgroundColor: 'var(--surface)',
-                border: `1px solid var(--border)`,
-              }}
-            >
+              {/* Payment Methods Section */}
+              <div
+                className="rounded-xl p-6"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  border: `1px solid var(--border)`,
+                }}
+              >
               <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                 Payment Method
               </h3>
@@ -657,6 +654,7 @@ const Checkout = () => {
                   ))}
                 </div>
               )}
+              </div>
             </motion.div>
           </div>
         </div>

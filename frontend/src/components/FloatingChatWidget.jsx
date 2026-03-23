@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, User, X, Minimize2, Loader, Copy, Check } from 'lucide-react';
 import { sendMessageToAI, EXAMPLE_QUESTIONS } from '../services/aiService';
 import ChatbotLogo from './ChatbotLogo';
+import { useAuthStore } from '../store/authStore';
+import COURSES_WITH_CONTENT from '../data/coursesData';
 import './FloatingChatWidget.css';
 
 const FloatingChatWidget = () => {
+  const { isAuthenticated, user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState([
@@ -84,7 +87,7 @@ const FloatingChatWidget = () => {
     setIsLoading(true);
 
     try {
-      const aiResponse = await sendMessageToAI(currentInput, messages);
+      const aiResponse = await sendMessageToAI(currentInput, messages, buildUserContext());
 
       const botResponse = {
         role: 'assistant',
@@ -154,6 +157,40 @@ const FloatingChatWidget = () => {
     }
   };
 
+  const buildUserContext = () => {
+    const pathname = window.location.pathname;
+    const enrolledCourseIds = isAuthenticated
+      ? JSON.parse(localStorage.getItem('enrolledCourses') || '[]')
+      : [];
+
+    const learningPathMatch = pathname.match(/^\/learn\/(\d+)/);
+    let activeCourseId = learningPathMatch?.[1] || null;
+
+    if (!activeCourseId) {
+      const recentLessonKey = Object.keys(localStorage)
+        .filter((key) => key.startsWith('course_last_lesson_'))
+        .slice(-1)[0];
+
+      if (recentLessonKey) {
+        const parts = recentLessonKey.split('_');
+        activeCourseId = parts.length >= 4 ? parts[3] : null;
+      }
+    }
+
+    const activeCourse = COURSES_WITH_CONTENT.find(
+      (course) => String(course.id) === String(activeCourseId)
+    );
+
+    return {
+      isAuthenticated,
+      userName: user?.name || 'Learner',
+      enrolledCourseIds,
+      currentPath: pathname,
+      lastViewedCourseId: activeCourseId,
+      activeCourseTitle: activeCourse?.title || null,
+    };
+  };
+
   return (
     <>
       {/* Floating Chat Button */}
@@ -175,9 +212,9 @@ const FloatingChatWidget = () => {
               width: '64px',
               height: '64px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #059669 100%)',
+              background: 'linear-gradient(135deg, #111827 0%, #000000 100%)',
               border: '2px solid white',
-              boxShadow: '0 12px 48px rgba(59, 130, 246, 0.35), 0 0 1px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 12px 48px rgba(17, 24, 39, 0.35), 0 0 1px rgba(0, 0, 0, 0.1)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -201,7 +238,7 @@ const FloatingChatWidget = () => {
               animate={{ scale: [1, 1.3], opacity: [0.6, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
               className="absolute inset-0 rounded-full border-2"
-              style={{ borderColor: 'rgba(59, 130, 246, 0.5)' }}
+              style={{ borderColor: 'rgba(17, 24, 39, 0.45)' }}
             />
           </motion.button>
         )}
@@ -243,7 +280,7 @@ const FloatingChatWidget = () => {
             <div
               className="flex items-center justify-between px-5 py-4"
               style={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+                background: 'linear-gradient(135deg, #111827 0%, #1f2937 60%, #000000 100%)',
                 borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
                 cursor: isMinimized ? 'pointer' : 'default',
                 backdropFilter: 'blur(10px)',
@@ -259,7 +296,7 @@ const FloatingChatWidget = () => {
                   <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white shadow-md"
+                    className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-white rounded-full border-2 border-slate-800 shadow-md"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -303,8 +340,8 @@ const FloatingChatWidget = () => {
                         {/* Avatar */}
                         <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center shadow-sm font-bold text-xs ${
                           message.role === 'assistant'
-                            ? 'bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500'
-                            : 'bg-gradient-to-br from-emerald-400 to-teal-500'
+                            ? 'bg-gradient-to-br from-slate-800 to-black'
+                            : 'bg-gradient-to-br from-slate-600 to-slate-800'
                         }`}>
                           {message.role === 'assistant' ? (
                             <ChatbotLogo size={14} className="text-white" />
@@ -319,8 +356,8 @@ const FloatingChatWidget = () => {
                             <div
                               className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm transition-all duration-200 ${
                                 message.role === 'assistant'
-                                  ? 'rounded-tl-none bg-white text-gray-900 border border-gray-200 group-hover:shadow-md'
-                                  : 'rounded-tr-none bg-gradient-to-r from-blue-500 to-cyan-500 text-white group-hover:shadow-lg'
+                                  ? 'rounded-tl-none bg-white text-slate-900 border border-slate-200 group-hover:shadow-md'
+                                    : 'rounded-tr-none bg-gradient-to-r from-slate-700 to-black text-white group-hover:shadow-lg'
                               }`}
                               style={{
                                 wordBreak: 'break-word',
@@ -359,7 +396,7 @@ const FloatingChatWidget = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="flex gap-2.5 items-end"
                     >
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-500 shadow-sm flex-shrink-0">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-black shadow-sm flex-shrink-0">
                         <ChatbotLogo size={14} className="text-white" />
                       </div>
                       <div className="rounded-2xl rounded-tl-none px-4 py-3 bg-white border border-gray-200 shadow-sm flex items-center gap-1.5">
@@ -367,19 +404,19 @@ const FloatingChatWidget = () => {
                           animate={{ scale: [1, 1.2, 1] }}
                           transition={{ duration: 0.6, repeat: Infinity }}
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: '#3b82f6' }}
+                          style={{ backgroundColor: '#111827' }}
                         />
                         <motion.div
                           animate={{ scale: [1, 1.2, 1] }}
                           transition={{ duration: 0.6, repeat: Infinity, delay: 0.1 }}
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: '#06b6d4' }}
+                          style={{ backgroundColor: '#374151' }}
                         />
                         <motion.div
                           animate={{ scale: [1, 1.2, 1] }}
                           transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: '#3b82f6' }}
+                          style={{ backgroundColor: '#000000' }}
                         />
                       </div>
                     </motion.div>
@@ -390,7 +427,7 @@ const FloatingChatWidget = () => {
 
                 {/* Quick Actions (show only at start) */}
                 {messages.length === 1 && (
-                  <div className="px-4 py-3 border-t bg-gradient-to-br from-blue-50 to-cyan-50" style={{ borderColor: '#e5e7eb' }}>
+                  <div className="px-4 py-3 border-t bg-gradient-to-br from-slate-100 to-white" style={{ borderColor: '#e5e7eb' }}>
                     <p className="text-xs font-bold mb-3 text-gray-700 uppercase tracking-wide">Suggested Topics:</p>
                     <div className="grid grid-cols-2 gap-2">
                       {EXAMPLE_QUESTIONS.slice(0, 4).map((question, index) => (
@@ -399,9 +436,9 @@ const FloatingChatWidget = () => {
                           whileHover={{ scale: 1.05, y: -2 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => handleExampleClick(question)}
-                          className="text-xs px-3 py-2.5 rounded-lg border bg-white hover:bg-blue-50 transition-all duration-200 text-gray-700 font-medium cursor-pointer"
+                          className="text-xs px-3 py-2.5 rounded-lg border bg-white hover:bg-slate-100 transition-all duration-200 text-gray-700 font-medium cursor-pointer"
                           style={{
-                            borderColor: '#bfdbfe',
+                            borderColor: '#d1d5db',
                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                           }}
                         >
@@ -430,8 +467,8 @@ const FloatingChatWidget = () => {
                       }}
                       onFocus={(e) => {
                         e.target.style.backgroundColor = '#ffffff';
-                        e.target.style.borderColor = '#3b82f6';
-                        e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                        e.target.style.borderColor = '#111827';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(17, 24, 39, 0.12)';
                       }}
                       onBlur={(e) => {
                         e.target.style.backgroundColor = '#f3f4f6';
@@ -446,7 +483,7 @@ const FloatingChatWidget = () => {
                       className="p-3 rounded-xl transition-all duration-200 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-md active:scale-95"
                       style={{
                         background: input.trim() && !isLoading
-                          ? 'linear-gradient(135deg, #3b82f6, #06b6d4)'
+                          ? 'linear-gradient(135deg, #111827, #000000)'
                           : '#e5e7eb',
                         color: input.trim() && !isLoading ? 'white' : '#9ca3af'
                       }}
