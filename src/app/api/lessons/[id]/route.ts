@@ -4,10 +4,11 @@ import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const lessonId = parseInt(params.id);
+    const { id } = await params;
+    const lessonId = parseInt(id);
     
     if (isNaN(lessonId)) {
       return NextResponse.json(
@@ -36,7 +37,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = getUserFromRequest(request);
@@ -47,7 +48,8 @@ export async function POST(
       );
     }
 
-    const lessonId = parseInt(params.id);
+    const { id } = await params;
+    const lessonId = parseInt(id);
     
     if (isNaN(lessonId)) {
       return NextResponse.json(
