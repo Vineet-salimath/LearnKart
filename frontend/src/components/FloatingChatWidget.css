@@ -1,0 +1,394 @@
+/* Floating Chat Widget Styles - Modern Production Design */
+
+/* ============================================
+   FLOATING BUTTON ANIMATIONS
+   ============================================ */
+
+/* Enhanced pulsing animation for floating button */
+.floating-chat-button {
+  animation: float-pulse-enhanced 3s ease-in-out infinite;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes float-pulse-enhanced {
+  0%, 100% {
+    box-shadow: 0 12px 48px rgba(59, 130, 246, 0.35), 0 0 20px rgba(6, 182, 212, 0.2);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 16px 56px rgba(59, 130, 246, 0.45), 0 0 30px rgba(6, 182, 212, 0.3);
+    transform: translateY(-6px);
+  }
+}
+
+/* Smooth entry animation for chat widget */
+.floating-chat-widget {
+  animation: widget-entry 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes widget-entry {
+  from {
+    transform: scale(0.85) translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+/* Message area scrollbar - Chrome/Edge/Safari */
+.floating-chat-widget::-webkit-scrollbar {
+  width: 6px;
+}
+
+.floating-chat-widget::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.floating-chat-widget::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-chat-widget::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+/* ============================================
+   Z-INDEX MANAGEMENT
+   ============================================ */
+
+.floating-chat-button {
+  z-index: 10000;
+}
+
+.floating-chat-widget {
+  z-index: 10001;
+}
+
+/* ============================================
+   MOBILE RESPONSIVENESS
+   ============================================ */
+
+@media (max-width: 640px) {
+  .floating-chat-button {
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 56px !important;
+    height: 56px !important;
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.35), 0 0 16px rgba(6, 182, 212, 0.25) !important;
+  }
+
+  .floating-chat-widget {
+    bottom: 20px !important;
+    right: 20px !important;
+    left: 20px !important;
+    width: calc(100vw - 40px) !important;
+    max-height: calc(100vh - 120px) !important;
+    height: 500px !important;
+    border-radius: 20px !important;
+  }
+
+  .floating-chat-widget[style*="height: 64px"] {
+    height: 64px !important;
+  }
+
+  /* Better keyboard handling on mobile */
+  .floating-chat-widget input {
+    font-size: 16px; /* Prevents iOS zoom */
+  }
+}
+
+/* ============================================
+   TABLET RESPONSIVENESS
+   ============================================ */
+
+@media (max-width: 768px) {
+  .floating-chat-widget {
+    width: calc(100vw - 48px) !important;
+    max-height: calc(100vh - 100px) !important;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY & INTERACTIONS
+   ============================================ */
+
+/* Prevent text selection on headers */
+.floating-chat-widget > div:first-child {
+  user-select: none;
+}
+
+/* Smooth transitions for all interactive elements */
+.floating-chat-button,
+.floating-chat-widget button,
+.floating-chat-widget input {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus visible for accessibility */
+.floating-chat-button:focus-visible,
+.floating-chat-widget button:focus-visible,
+.floating-chat-widget input:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Prevent overflow issues */
+.floating-chat-widget {
+  box-sizing: border-box;
+}
+
+/* ============================================
+   ANIMATION UTILITIES
+   ============================================ */
+
+/* Message fade-in animation (handled by Framer Motion) */
+@keyframes message-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes message-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes message-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Typing dots animation */
+@keyframes typing-dot {
+  0%, 20% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Pulse ring animation for button */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* Online status indicator pulse */
+@keyframes status-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+}
+
+/* ============================================
+   DARK MODE SUPPORT (Optional)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .floating-chat-widget {
+    background-color: #1f2937;
+    color: #f3f4f6;
+  }
+
+  .floating-chat-widget input {
+    background-color: #374151;
+    color: #f3f4f6;
+    border-color: #4b5563;
+  }
+
+  .floating-chat-widget input::placeholder {
+    color: #9ca3af;
+  }
+
+  .floating-chat-widget::-webkit-scrollbar-thumb {
+    background: #4b5563;
+  }
+
+  .floating-chat-widget::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
+}
+
+/* ============================================
+   PRINT STYLES (Optional)
+   ============================================ */
+
+@media print {
+  .floating-chat-button,
+  .floating-chat-widget {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   REDUCED MOTION (Accessibility)
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-chat-button,
+  .floating-chat-widget,
+  .floating-chat-widget button,
+  .floating-chat-widget input {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Smooth entry animation for chat widget */
+.floating-chat-widget {
+  animation: widget-entry 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes widget-entry {
+  from {
+    transform: scale(0.8) translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Scrollbar styling for better aesthetics */
+.floating-chat-widget::-webkit-scrollbar {
+  width: 6px;
+}
+
+.floating-chat-widget::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.floating-chat-widget::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.floating-chat-widget::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+
+/* Message area scrollbar */
+.floating-chat-widget > div:nth-child(2) > div:first-child::-webkit-scrollbar {
+  width: 5px;
+}
+
+.floating-chat-widget > div:nth-child(2) > div:first-child::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+.floating-chat-widget > div:nth-child(2) > div:first-child::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+
+.floating-chat-widget > div:nth-child(2) > div:first-child::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+
+/* Ensure widget is above all content including modals */
+.floating-chat-button {
+  z-index: 10000;
+}
+
+.floating-chat-widget {
+  z-index: 10001;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .floating-chat-button {
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 56px !important;
+    height: 56px !important;
+    box-shadow: 0 6px 24px rgba(124, 58, 237, 0.4), 0 0 16px rgba(124, 58, 237, 0.25) !important;
+  }
+
+  .floating-chat-widget {
+    bottom: 20px !important;
+    right: 20px !important;
+    width: calc(100vw - 40px) !important;
+    max-height: calc(100vh - 80px) !important;
+    height: 600px !important;
+  }
+
+  .floating-chat-widget[style*="height: 64px"] {
+    height: 64px !important;
+  }
+}
+
+/* Tablet responsiveness */
+@media (max-width: 768px) {
+  .floating-chat-widget {
+    width: calc(100vw - 48px) !important;
+  }
+}
+
+/* Prevent text selection on headers */
+.floating-chat-widget > div:first-child {
+  user-select: none;
+}
+
+/* Smooth transitions for all interactive elements */
+.floating-chat-button,
+.floating-chat-widget button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent overflow issues */
+.floating-chat-widget {
+  box-sizing: border-box;
+}
+

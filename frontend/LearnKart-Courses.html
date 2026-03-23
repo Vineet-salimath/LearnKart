@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LearnKart - Courses & Enrollment</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-tertiary: #e9ecef;
+      --text-primary: #1a1a1a;
+      --text-secondary: #666666;
+      --border-color: #e0e0e0;
+      --card-bg: #ffffff;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --accent: #a435f0;
+      --accent-light: #cca0f7;
+      --accent-dark: #7d2fb8;
+      --success: #10b981;
+      --sidebar-bg: #f8f9fa;
+      --hover-bg: #f0f0f0;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #0f0f0f;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #2d2d2d;
+      --text-primary: #ffffff;
+      --text-secondary: #b0b0b0;
+      --border-color: #333333;
+      --card-bg: #1c1c1c;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      --sidebar-bg: #1c1c1c;
+      --hover-bg: #2d2d2d;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      transition: background-color 0.3s, color 0.3s;
+      line-height: 1.6;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+      transition: all 0.3s;
+    }
+
+    .navbar-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    .search-container {
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(164, 53, 240, 0.1);
+    }
+
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+      transition: color 0.2s;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background-color: var(--hover-bg);
+      color: var(--accent);
+    }
+
+    .btn-primary {
+      padding: 0.6rem 1.2rem;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(164, 53, 240, 0.3);
+    }
+
+    /* CONTAINER */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      gap: 2rem;
+      padding: 2rem;
+      min-height: calc(100vh - 80px);
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 280px;
+      background-color: var(--sidebar-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      height: fit-content;
+      position: sticky;
+      top: 90px;
+    }
+
+    .sidebar-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+
+    .filter-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .filter-group input[type="text"],
+    .filter-group select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .filter-group input[type="text"]:focus,
+    .filter-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(164, 53, 240, 0.1);
+    }
+
+    .price-inputs {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .price-inputs input {
+      flex: 1;
+      padding: 0.6rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.85rem;
+    }
+
+    .price-inputs span {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .btn-clear {
+      width: 100%;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+    }
+
+    .btn-clear:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(164, 53, 240, 0.3);
+    }
+
+    /* MAIN CONTENT */
+    .main-content {
+      flex: 1;
+    }
+
+    .courses-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .courses-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .results-count {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .courses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      padding-bottom: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .courses-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .courses-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* COURSE CARD */
+    .course-card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      transition: all 0.3s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      opacity: 0;
+      animation: slideIn 0.5s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .course-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(164, 53, 240, 0.15);
+      border-color: var(--accent);
+    }
+
+    .course-thumbnail {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--hover-bg) 100%);
+      overflow: hidden;
+    }
+
+    .course-thumbnail img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+
+    .course-card:hover .course-thumbnail img {
+      transform: scale(1.05);
+    }
+
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .course-card:hover .play-overlay {
+      opacity: 1;
+    }
+
+    .play-icon {
+      width: 50px;
+      height: 50px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .course-badges {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      z-index: 10;
+    }
+
+    .badge {
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-category {
+      background: rgba(164, 53, 240, 0.9);
+      color: white;
+    }
+
+    .badge-level {
+      background: rgba(16, 185, 129, 0.9);
+      color: white;
+    }
+
+    .badge-enrolled {
+      background: rgba(16, 185, 129, 0.9);
+      color: white;
+    }
+
+    .course-content {
+      padding: 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .course-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .course-instructor {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .course-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .rating {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .star {
+      color: #ffc107;
+    }
+
+    .course-price {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .price-original {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-decoration: line-through;
+      font-weight: normal;
+    }
+
+    .price-free {
+      color: var(--success);
+      font-size: 1.1rem;
+    }
+
+    .course-button {
+      width: 100%;
+      padding: 0.85rem;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.95rem;
+      margin-top: auto;
+    }
+
+    .course-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(164, 53, 240, 0.3);
+    }
+
+    .course-button.enrolled {
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+      }
+    }
+
+    /* MODAL */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .modal {
+      background: var(--card-bg);
+      border-radius: 16px;
+      width: 95%;
+      max-width: 900px;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      border: 1px solid var(--border-color);
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: var(--hover-bg);
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.5rem;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+
+    .modal-close:hover {
+      background: var(--border-color);
+      transform: rotate(90deg);
+    }
+
+    .modal-left {
+      flex: 3;
+      padding: 2rem;
+      border-right: 1px solid var(--border-color);
+      position: relative;
+    }
+
+    .modal-right {
+      flex: 2;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-video {
+      width: 100%;
+      height: 320px;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .modal-course-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-course-meta {
+      display: flex;
+      gap: 1.5rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    .modal-section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .learn-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .learn-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    .learn-list li:before {
+      content: '✓';
+      color: var(--success);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .includes-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .includes-list li:before {
+      content: '•';
+      color: var(--accent);
+      font-weight: 700;
+      margin-right: 0.5rem;
+    }
+
+    /* ENROLLMENT SUMMARY */
+    .enrollment-summary {
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      background: var(--bg-secondary);
+    }
+
+    .summary-price {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-original {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      text-decoration: line-through;
+      margin-bottom: 0.3rem;
+    }
+
+    .summary-current {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .btn-enroll {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+      margin-bottom: 1rem;
+    }
+
+    .btn-enroll:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(164, 53, 240, 0.3);
+    }
+
+    .guarantee {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .share-section {
+      border-top: 1px solid var(--border-color);
+      padding-top: 1rem;
+      text-align: center;
+    }
+
+    .share-icons {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .share-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--hover-bg);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      color: var(--text-primary);
+    }
+
+    .share-icon:hover {
+      background: var(--accent);
+      color: white;
+      transform: scale(1.1);
+    }
+
+    /* PAYMENT FORM */
+    .payment-form {
+      display: none;
+    }
+
+    .payment-form.active {
+      display: block;
+      animation: slideLeft 0.3s ease-out;
+    }
+
+    @keyframes slideLeft {
+      from {
+        transform: translateX(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(164, 53, 240, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .btn-pay {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-pay:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(164, 53, 240, 0.3);
+    }
+
+    .btn-pay.loading {
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .security-badge {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+    }
+
+    /* SUCCESS SCREEN */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 3rem 2rem;
+    }
+
+    .success-screen.active {
+      display: block;
+    }
+
+    .checkmark {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      animation: scaleIn 0.5s ease-out;
+    }
+
+    @keyframes scaleIn {
+      from {
+        transform: scale(0);
+      }
+      to {
+        transform: scale(1);
+      }
+    }
+
+    .checkmark svg {
+      width: 50px;
+      height: 50px;
+      stroke: white;
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      animation: drawCheck 0.6s ease-out 0.3s forwards;
+      opacity: 0;
+    }
+
+    @keyframes drawCheck {
+      from {
+        stroke-dasharray: 60;
+        stroke-dashoffset: 60;
+      }
+      to {
+        stroke-dasharray: 60;
+        stroke-dashoffset: 0;
+        opacity: 1;
+      }
+    }
+
+    .success-text {
+      color: var(--text-primary);
+    }
+
+    .success-heading {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .success-subtext {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-success {
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+    }
+
+    /* BACK BUTTON */
+    .btn-back {
+      background: var(--hover-bg);
+      color: var(--text-primary);
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .btn-back:hover {
+      background: var(--border-color);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .sidebar {
+        width: 100%;
+        position: static;
+      }
+
+      .modal {
+        flex-direction: column;
+      }
+
+      .modal-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .modal-left, .modal-right {
+        padding: 1.5rem;
+      }
+
+      .learn-list {
+        grid-template-columns: 1fr;
+      }
+
+      .navbar-container {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .search-container {
+        max-width: 100%;
+      }
+    }
+
+    /* NO RESULTS */
+    .no-results {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--text-secondary);
+    }
+
+    .no-results h3 {
+      font-size: 1.3rem;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="navbar-container">
+    <a href="#" class="logo">LearnKart</a>
+    <div class="search-container">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search courses...">
+    </div>
+    <div class="navbar-right">
+      <button class="btn-icon" id="themeToggle" title="Toggle theme">🌙</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <aside class="sidebar">
+    <h3 class="sidebar-title">Filters</h3>
+
+    <div class="filter-group">
+      <label>Category</label>
+      <select id="categoryFilter">
+        <option value="">All Categories</option>
+        <option value="React/Next/TS">React/Next/TS</option>
+        <option value="JavaScript">JavaScript</option>
+        <option value="Cybersecurity">Cybersecurity</option>
+        <option value="DevOps">DevOps</option>
+        <option value="Mobile Security">Mobile Security</option>
+        <option value="System Design">System Design</option>
+        <option value="Backend">Backend</option>
+        <option value="Database">Database</option>
+        <option value="Python">Python</option>
+        <option value="Extra">Extra</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Level</label>
+      <select id="levelFilter">
+        <option value="">All Levels</option>
+        <option value="Beginner">Beginner</option>
+        <option value="Intermediate">Intermediate</option>
+        <option value="Advanced">Advanced</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Price Range</label>
+      <div class="price-inputs">
+        <input type="number" id="minPrice" placeholder="Min" value="0">
+        <span>-</span>
+        <input type="number" id="maxPrice" placeholder="Max" value="999">
+      </div>
+    </div>
+
+    <button class="btn-clear" id="clearFilters">Clear Filters</button>
+  </aside>
+
+  <main class="main-content">
+    <div class="courses-header">
+      <h1 class="courses-title">Our Courses</h1>
+      <div class="results-count">
+        <span id="resultsCount">Showing 30 of 30</span>
+      </div>
+    </div>
+    <div class="courses-grid" id="coursesGrid"></div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="enrollmentModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+
+    <div class="modal-left">
+      <iframe class="modal-video" id="modalVideo" src="" title="Course Video" allowfullscreen></iframe>
+
+      <h2 class="modal-course-title" id="modalTitle"></h2>
+
+      <div class="modal-course-meta">
+        <span id="modalInstructor"></span>
+        <span id="modalRating"></span>
+        <span id="modalStudents"></span>
+      </div>
+
+      <div id="coursePreview">
+        <h4 class="modal-section-title">What you'll learn</h4>
+        <ul class="learn-list" id="learnList"></ul>
+
+        <h4 class="modal-section-title">This course includes</h4>
+        <ul class="includes-list">
+          <li>Full video content (4-50 hours)</li>
+          <li>Mobile and desktop access</li>
+          <li>Certificate of completion</li>
+          <li>Lifetime access</li>
+          <li>30-day money-back guarantee</li>
+        </ul>
+      </div>
+
+      <div id="paymentForm" class="payment-form">
+        <button class="btn-back" onclick="backToPreview()">← Back</button>
+
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="fullName" placeholder="John Doe">
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email" placeholder="john@example.com">
+        </div>
+
+        <div class="form-group">
+          <label>Card Number</label>
+          <input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" maxlength="19">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Expiry</label>
+            <input type="text" id="expiry" placeholder="MM/YY" maxlength="5">
+          </div>
+          <div class="form-group">
+            <label>CVV</label>
+            <input type="text" id="cvv" placeholder="123" maxlength="3">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>UPI ID (Optional)</label>
+          <input type="text" id="upiId" placeholder="yourname@bank">
+        </div>
+
+        <button class="btn-pay" id="payButton" onclick="processPayment()">
+          <span id="payButtonText">Pay ₹0</span>
+        </button>
+
+        <div class="security-badge">
+          🔒 Secured by LearnKart Pay
+        </div>
+      </div>
+
+      <div id="successScreen" class="success-screen">
+        <div class="checkmark">
+          <svg viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h2 class="success-heading">You're Enrolled!</h2>
+        <p class="success-subtext">Congratulations! You can now start learning.</p>
+        <button class="btn-success" onclick="closeModal()">Start Learning →</button>
+      </div>
+    </div>
+
+    <div class="modal-right">
+      <div id="enrollmentSummary">
+        <div class="enrollment-summary">
+          <div class="summary-price">
+            <div class="summary-original" id="summaryOriginal">₹999</div>
+            <div class="summary-current" id="summaryCurrent">₹599</div>
+          </div>
+
+          <button class="btn-enroll" id="enrollButton" onclick="startEnrollment()">Enroll Now</button>
+
+          <p class="guarantee">30-Day Money-Back Guarantee</p>
+
+          <div class="share-section">
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">Share this course</p>
+            <div class="share-icons">
+              <button class="share-icon" title="Share on Facebook">f</button>
+              <button class="share-icon" title="Share on Twitter">𝕏</button>
+              <button class="share-icon" title="Share on LinkedIn">in</button>
+              <button class="share-icon" title="Copy link">🔗</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // COURSES DATA
+  const courses = [
+    // React/Next/TS
+    { id: 1, title: "React Full Course", instructor: "Traversy Media", category: "React/Next/TS", level: "Beginner", price: 499, rating: 4.8, students: "32K", embedId: "bMknfKXIFA8" },
+    { id: 2, title: "Next.js Full Course", instructor: "Vercel Team", category: "React/Next/TS", level: "Intermediate", price: 599, rating: 4.7, students: "18K", embedId: "wm5gMKuwSYk" },
+    { id: 3, title: "TypeScript Mastery", instructor: "Matt Pocock", category: "React/Next/TS", level: "Intermediate", price: 549, rating: 4.6, students: "14K", embedId: "30LWjhZzg50" },
+    // JavaScript
+    { id: 4, title: "JavaScript Complete Guide", instructor: "FreeCodeCamp", category: "JavaScript", level: "Beginner", price: 299, rating: 4.9, students: "95K", embedId: "PkZNo7MFNFg" },
+    { id: 5, title: "Advanced JavaScript Concepts", instructor: "Akshay Saini", category: "JavaScript", level: "Advanced", price: 699, rating: 4.9, students: "41K", embedId: "KGkiIBTq0y0" },
+    { id: 6, title: "JavaScript Fundamentals", instructor: "Traversy Media", category: "JavaScript", level: "Beginner", price: 399, rating: 4.5, students: "28K", embedId: "hdI2bqOjy3c" },
+    // Cybersecurity
+    { id: 7, title: "Ethical Hacking Full Course", instructor: "TCM Security", category: "Cybersecurity", level: "Beginner", price: 799, rating: 4.8, students: "22K", embedId: "3Kq1MIfTWCE" },
+    { id: 8, title: "Web Security Fundamentals", instructor: "TCM Security", category: "Cybersecurity", level: "Intermediate", price: 599, rating: 4.6, students: "11K", embedId: "3Kq1MIfTWCE" },
+    { id: 9, title: "Bug Bounty Guide", instructor: "InsiderPhD", category: "Cybersecurity", level: "Intermediate", price: 899, rating: 4.7, students: "8K", embedId: "Pu3gk9K5cZ8" },
+    { id: 10, title: "Practical Ethical Hacking", instructor: "Heath Adams", category: "Cybersecurity", level: "Advanced", price: 999, rating: 4.9, students: "19K", embedId: "fNzpcB7ODxQ" },
+    { id: 11, title: "HackTheBox Walkthrough", instructor: "IppSec", category: "Cybersecurity", level: "Advanced", price: 699, rating: 4.8, students: "7K", embedId: "2eLe7uz-7CM" },
+    // DevOps
+    { id: 12, title: "Docker Complete Guide", instructor: "TechWorld Nina", category: "DevOps", level: "Beginner", price: 499, rating: 4.7, students: "33K", embedId: "fqMOX6JJhGo" },
+    { id: 13, title: "Kubernetes Full Course", instructor: "TechWorld Nina", category: "DevOps", level: "Intermediate", price: 699, rating: 4.8, students: "25K", embedId: "X48VuDVv0do" },
+    { id: 14, title: "Jenkins CI/CD Pipeline", instructor: "Simplilearn", category: "DevOps", level: "Intermediate", price: 549, rating: 4.5, students: "12K", embedId: "FX322RVNGj4" },
+    { id: 15, title: "DevOps Mastery Roadmap", instructor: "TechWorld", category: "DevOps", level: "Beginner", price: 299, rating: 4.6, students: "44K", embedId: "9pZ2xmsSDdo" },
+    { id: 16, title: "Linux System Administration", instructor: "DorianDotSlash", category: "DevOps", level: "Beginner", price: 449, rating: 4.7, students: "38K", embedId: "ivd3b6z2d4k" },
+    // Mobile Security
+    { id: 17, title: "Mobile App Security Android", instructor: "STÖK", category: "Mobile Security", level: "Intermediate", price: 799, rating: 4.6, students: "6K", embedId: "HhF0X9cXH6E" },
+    { id: 18, title: "OWASP Top 10 Security", instructor: "TCM Security", category: "Mobile Security", level: "Advanced", price: 899, rating: 4.8, students: "9K", embedId: "3Kq1MIfTWCE" },
+    // System Design
+    { id: 19, title: "System Design Interview", instructor: "Gaurav Sen", category: "System Design", level: "Intermediate", price: 599, rating: 4.9, students: "52K", embedId: "UzLMhqg3_Wc" },
+    { id: 20, title: "Microservices Architecture", instructor: "Tech Primers", category: "System Design", level: "Advanced", price: 799, rating: 4.7, students: "16K", embedId: "rv4LlmLmVWk" },
+    // Backend
+    { id: 21, title: "Node.js Complete Guide", instructor: "FreeCodeCamp", category: "Backend", level: "Beginner", price: 299, rating: 4.8, students: "67K", embedId: "Oe421EPjeBE" },
+    // Database
+    { id: 22, title: "SQL Complete Course", instructor: "FreeCodeCamp", category: "Database", level: "Beginner", price: 299, rating: 4.9, students: "88K", embedId: "HXV3zeQKqGY" },
+    { id: 23, title: "PostgreSQL Advanced", instructor: "Amigoscode", category: "Database", level: "Intermediate", price: 549, rating: 4.7, students: "21K", embedId: "qw--VYLpxG4" },
+    { id: 24, title: "MongoDB Complete Guide", instructor: "FreeCodeCamp", category: "Database", level: "Beginner", price: 449, rating: 4.6, students: "29K", embedId: "ofme2o29ngU" },
+    // Python
+    { id: 25, title: "Python Complete Course", instructor: "FreeCodeCamp", category: "Python", level: "Beginner", price: 299, rating: 4.9, students: "112K", embedId: "rfscVS0vtbw" },
+    { id: 26, title: "Python OOP Mastery", instructor: "Corey Schafer", category: "Python", level: "Intermediate", price: 499, rating: 4.8, students: "34K", embedId: "JeznW_7DlB0" },
+    { id: 27, title: "Python Real Projects", instructor: "Tech With Tim", category: "Python", level: "Intermediate", price: 549, rating: 4.7, students: "27K", embedId: "8ext9G7xspg" },
+    { id: 28, title: "Python Automation Scripting", instructor: "FreeCodeCamp", category: "Python", level: "Advanced", price: 599, rating: 4.6, students: "19K", embedId: "PXMJ6FS7llk" },
+    // Extra
+    { id: 29, title: "CI/CD Advanced Pipeline", instructor: "DevOps Directive", category: "Extra", level: "Advanced", price: 699, rating: 4.7, students: "8K", embedId: "scEDHsr3APg" },
+    { id: 30, title: "Advanced Web Dev Project", instructor: "Traversy Media", category: "Extra", level: "Advanced", price: 799, rating: 4.8, students: "11K", embedId: "Ke90Tje7VS0" },
+  ];
+
+  let enrolledCourses = new Set();
+  let filteredCourses = [...courses];
+
+  // THEME TOGGLE
+  function initTheme() {
+    const theme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeIcon(theme);
+  }
+
+  function updateThemeIcon(theme) {
+    const btn = document.getElementById('themeToggle');
+    btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const newTheme = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+  });
+
+  // RENDER COURSES
+  function renderCourses(coursesToRender = courses) {
+    const grid = document.getElementById('coursesGrid');
+    grid.innerHTML = '';
+
+    if (coursesToRender.length === 0) {
+      grid.innerHTML = `
+        <div class="no-results">
+          <h3>No courses found</h3>
+          <p>Try adjusting your filters or search terms</p>
+        </div>
+      `;
+      document.getElementById('resultsCount').textContent = 'Showing 0 of 30';
+      return;
+    }
+
+    coursesToRender.forEach((course, idx) => {
+      const isEnrolled = enrolledCourses.has(course.id);
+      const card = document.createElement('div');
+      card.className = 'course-card';
+      card.style.animationDelay = `${idx * 0.05}s`;
+      card.innerHTML = `
+        <div class="course-thumbnail">
+          <img src="https://img.youtube.com/vi/${course.embedId}/hqdefault.jpg" alt="${course.title}">
+          <div class="play-overlay">
+            <div class="play-icon">▶</div>
+          </div>
+          <div class="course-badges">
+            <span class="badge badge-category">${course.category}</span>
+            <span class="badge badge-level">${course.level}</span>
+          </div>
+        </div>
+        <div class="course-content">
+          <h3 class="course-title">${course.title}</h3>
+          <p class="course-instructor">by ${course.instructor}</p>
+          <div class="course-meta">
+            <div class="rating">
+              <span class="star">★</span>
+              <span>${course.rating}</span>
+              <span>(${course.students})</span>
+            </div>
+          </div>
+          <div class="course-price">
+            ${course.price === 0 ? '<span class="price-free">FREE</span>' : `<span>₹${course.price}</span>`}
+          </div>
+          <button class="course-button ${isEnrolled ? 'enrolled' : ''}" onclick="openModal(${course.id})">
+            ${isEnrolled ? '✓ Enrolled' : 'Enroll Now'}
+          </button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    document.getElementById('resultsCount').textContent = `Showing ${coursesToRender.length} of 30`;
+  }
+
+  // FILTERING
+  function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const category = document.getElementById('categoryFilter').value;
+    const level = document.getElementById('levelFilter').value;
+    const minPrice = parseInt(document.getElementById('minPrice').value) || 0;
+    const maxPrice = parseInt(document.getElementById('maxPrice').value) || 999;
+
+    filteredCourses = courses.filter(course => {
+      const matchesSearch = course.title.toLowerCase().includes(searchTerm) ||
+                           course.instructor.toLowerCase().includes(searchTerm);
+      const matchesCategory = !category || course.category === category;
+      const matchesLevel = !level || course.level === level;
+      const matchesPrice = course.price >= minPrice && course.price <= maxPrice;
+
+      return matchesSearch && matchesCategory && matchesLevel && matchesPrice;
+    });
+
+    renderCourses(filteredCourses);
+  }
+
+  // EVENT LISTENERS
+  document.getElementById('searchInput').addEventListener('input', () => {
+    clearTimeout(window.filterTimeout);
+    window.filterTimeout = setTimeout(applyFilters, 300);
+  });
+
+  document.getElementById('categoryFilter').addEventListener('change', applyFilters);
+  document.getElementById('levelFilter').addEventListener('change', applyFilters);
+  document.getElementById('minPrice').addEventListener('change', applyFilters);
+  document.getElementById('maxPrice').addEventListener('change', applyFilters);
+
+  document.getElementById('clearFilters').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('levelFilter').value = '';
+    document.getElementById('minPrice').value = '0';
+    document.getElementById('maxPrice').value = '999';
+    applyFilters();
+  });
+
+  // MODAL FUNCTIONS
+  let currentCourse = null;
+
+  function openModal(courseId) {
+    currentCourse = courses.find(c => c.id === courseId);
+    const modal = document.getElementById('enrollmentModal');
+
+    document.getElementById('modalVideo').src = `https://www.youtube.com/embed/${currentCourse.embedId}`;
+    document.getElementById('modalTitle').textContent = currentCourse.title;
+    document.getElementById('modalInstructor').textContent = `By ${currentCourse.instructor}`;
+    document.getElementById('modalRating').textContent = `⭐ ${currentCourse.rating} (${currentCourse.students} students)`;
+    document.getElementById('modalStudents').textContent = `Level: ${currentCourse.level}`;
+
+    const learnList = document.getElementById('learnList');
+    const learnings = generateLearnings(currentCourse.title, currentCourse.category);
+    learnList.innerHTML = learnings.map(item => `<li>${item}</li>`).join('');
+
+    document.getElementById('summaryCurrent').textContent = currentCourse.price === 0 ? 'FREE' : `₹${currentCourse.price}`;
+    document.getElementById('summaryOriginal').textContent = currentCourse.price === 0 ? '' : `₹${Math.floor(currentCourse.price * 1.5)}`;
+    document.getElementById('payButton').textContent = currentCourse.price === 0 ? 'Enroll Free' : `Pay ₹${currentCourse.price}`;
+
+    showSection('coursePreview');
+    modal.classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('enrollmentModal').classList.remove('active');
+    currentCourse = null;
+  }
+
+  function showSection(section) {
+    document.getElementById('coursePreview').style.display = section === 'coursePreview' ? 'block' : 'none';
+    document.getElementById('paymentForm').classList.toggle('active', section === 'payment');
+    document.getElementById('successScreen').classList.toggle('active', section === 'success');
+  }
+
+  function startEnrollment() {
+    if (currentCourse.price === 0) {
+      completeEnrollment();
+    } else {
+      showSection('payment');
+      document.getElementById('fullName').focus();
+    }
+  }
+
+  function backToPreview() {
+    showSection('coursePreview');
+  }
+
+  function processPayment() {
+    const name = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+    const expiry = document.getElementById('expiry').value.trim();
+    const cvv = document.getElementById('cvv').value.trim();
+
+    if (!name || !email || cardNumber.length < 16 || !expiry || !cvv) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const payBtn = document.getElementById('payButton');
+    payBtn.classList.add('loading');
+    payBtn.innerHTML = '<div class="spinner"></div> Processing...';
+
+    setTimeout(() => {
+      completeEnrollment();
+      payBtn.classList.remove('loading');
+      payBtn.textContent = `Pay ₹${currentCourse.price}`;
+    }, 1500);
+  }
+
+  function completeEnrollment() {
+    enrolledCourses.add(currentCourse.id);
+    showSection('success');
+    setTimeout(() => {
+      applyFilters();
+    }, 2000);
+  }
+
+  function generateLearnings(title, category) {
+    const learningsMap = {
+      'React/Next/TS': [
+        'Master React hooks and state management',
+        'Build with Next.js and TypeScript',
+        'Create scalable component architecture',
+        'Master advanced patterns'
+      ],
+      'JavaScript': [
+        'Master JavaScript fundamentals',
+        'Understand async programming & promises',
+        'DOM manipulation and events',
+        'Modern ES6+ features'
+      ],
+      'Cybersecurity': [
+        'Learn ethical hacking principles',
+        'Identify and fix security vulnerabilities',
+        'Penetration testing techniques',
+        'Security best practices'
+      ],
+      'DevOps': [
+        'Master containerization with Docker',
+        'Orchestrate with Kubernetes',
+        'CI/CD pipeline development',
+        'Infrastructure as Code'
+      ],
+      'Mobile Security': [
+        'Secure mobile app development',
+        'API security implementation',
+        'Mobile threat analysis',
+        'OWASP security standards'
+      ],
+      'System Design': [
+        'Design scalable architectures',
+        'Database optimization strategies',
+        'Caching and load balancing',
+        'Distributed systems concepts'
+      ],
+      'Backend': [
+        'Server-side development mastery',
+        'RESTful API design',
+        'Database integration',
+        'Authentication & security'
+      ],
+      'Database': [
+        'SQL query optimization',
+        'Database design principles',
+        'Normalization & indexing',
+        'Transaction management'
+      ],
+      'Python': [
+        'Python programming fundamentals',
+        'Object-oriented programming',
+        'Data structures & algorithms',
+        'Real-world project development'
+      ],
+      'Extra': [
+        'Advanced development techniques',
+        'Industry best practices',
+        'Real-world project experience',
+        'Career advancement skills'
+      ]
+    };
+
+    return learningsMap[category] || [
+      'Learn core concepts thoroughly',
+      'Build practical projects',
+      'Master industry standards',
+      'Advance your career'
+    ];
+  }
+
+  // INITIALIZE
+  initTheme();
+  renderCourses();
+</script>
+
+</body>
+</html>
